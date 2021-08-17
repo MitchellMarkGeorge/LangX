@@ -1,0 +1,36 @@
+<main>
+   
+    <!-- "test" === (test) *both identifiers. That means ("test") dosent work (references a string) -->
+    <block name=(test)>
+        <var id=(name) val=('Paul')/> 
+        <print content=(name)/>
+        <!-- <debug scope="true"/> -->
+    </block>
+
+    <!-- <test/> -->
+    <!-- executes the test block -->
+    <!-- no idea what name is  -->
+    <!-- <print content="name"/> -->
+    <!-- <debug scope="true"/> -->
+    <!--  now allows () in declaring atttributes (meaning that signle and double qutes re allowed)-->
+    <var id=(name) val=("Jeff" + 1)/> 
+    <!-- all exporession attributes are executed by evpression-eval (meaning expression like the one above are safe) -->
+    <!-- <debug scope=(true)/> -->
+    <loop count=(10) index=(i) >
+    <!-- <print content=(i)/> -->
+        <if condition=(i % 2 === 0)>
+            <print content=(i + " = even")/>
+        </if>
+        <else>
+            <print content=(i + " = odd ")/>
+        </else>
+        
+    </loop>
+
+    
+
+  
+    
+
+</main>
+
