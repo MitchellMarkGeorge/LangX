@@ -1,7 +1,7 @@
 const { eval: evalExpression } = require("expression-eval")
 
 let GLOBAl_SCOPE = {
-    
+
 }
 
 let print = (value) => {
@@ -9,7 +9,7 @@ let print = (value) => {
 }
 
 let BLOCK_MAP = {};
-let KEYTAGS = ["main", "var", "if", "else", "print", "loop", "block", "debug"]
+let KEYTAGS = ["main", "var", "if", "else", "print", "loop", "block", "debug", "function"]
 function isReserved(word) {
     return KEYTAGS.includes(word);
 }
@@ -52,57 +52,127 @@ function evalNode(node, scope) {
         case "debug":
             evalDebug(node, scope);
             break;
+
+        case "function":
+            // console.log(node);
+            // funtions are a type of block
+            // differences
+            //1) inherit scope
+            //2) can receive params
+            //3) can return results
+            evalFunction(node, scope);
+            break;
         default:
             checkBlockMap(node, scope); // scope?
             break;
     }
 }
 
+
+
+function evalFunction(node, scope) {
+
+    if (!node.attributes.id) {
+        throw new Error("function must have attribute name");
+    }
+
+    if (isReserved(node.attributes.id) || scope.hasOwnProperty(node.attributes.id)) {
+        throw new Error("function must have a unique name")
+    }
+    scope[node.attributes.id] = node;
+
+
+    // console.log(scope)
+    // let params = node.attributes.params;
+
+    // params = params.trim().split(/[\s,]+/);
+    // console.log(params);
+}
+
 function evalDebug(node, scope) {
+
     // console.log(node)
     if (node.attributes.scope === "true") {
         print(scope);
     }
 }
 
-function checkBlockMap(node, scope) { 
+function checkBlockMap(node, scope) {
+    console.log(scope);
     let blockName = node.name;
     // console.log(typeof blockName)
     // AS OF RIGHT NOW OLY BLOCKS CREATE THEIR OWN SCOPE
-    if (!BLOCK_MAP.hasOwnProperty(blockName)) {
+    if (!scope.hasOwnProperty(blockName)) {
         throw new Error("Can't recognize tag or block")
     }
 
-    let blockNode = BLOCK_MAP[blockName];
+    let blockNode = scope[blockName];
 
     if (blockNode) {
         // this merges the previous global scope with  a new scope
         // this alowes global variables to be used in scoped blocks
-        let newScope = {}
-        //Object.assign({}, scope); 
-        for (let i = 0; i < blockNode.children.length; i++) {
-            const currentNode = blockNode.children[i];
 
-            // let siblingNode = node.children[i + 1];
-            // // very hacky
-            // if (currentNode.name === "if" && siblingNode?.name === "else") {
-            //     node.children.splice(i + 1, 1);
-            // }
-            evalNode(currentNode, newScope);
+        if (blockNode.name === "function") {
+            let params = {};
+            // gets the params from the callee
+            Object.keys(node.attributes).forEach((key) => {
+                let value = node.attributes[key];
+                params[key] = evalExpression(value);
+            })
+            // creates a new scope using the params
+            // and "calls" the function // evals its children
+            //copy scope
+            // let scopeCopy = Object.assign()
+            // using blank object so scope variable is not mutated
+            // order is importatn as in function, the inner scope should be prefered to the outer scope
+            // meaning that you can have a variable with same name in a outer scope anmd in the inner scope,
+            // and when referenced, the value of the inner variable will be used
+            let newScope = Object.assign({}, scope, params);
+            for (let i = 0; i < blockNode.children.length; i++) {
+                const currentNode = blockNode.children[i];
+                evalNode(currentNode, newScope);
+            }
+            // console.log(scope)
+
+
+            // console.log("function");
+            // return;
+        } else {
+            let newScope = {}
+            //Object.assign({}, scope); 
+            for (let i = 0; i < blockNode.children.length; i++) {
+                const currentNode = blockNode.children[i];
+                if (currentNode.name === "return") {
+                    throw new Error("Can't return in block tag. Use function instead")
+                }
+                // let siblingNode = node.children[i + 1];
+                // // very hacky
+                // if (currentNode.name === "if" && siblingNode?.name === "else") {
+                //     node.children.splice(i + 1, 1);
+                // }
+                evalNode(currentNode, newScope);
+            }
         }
+
+
+
+
+
+
 
     }
 }
 
 function evalBlock(node, scope) {
-    if (!node.attributes.name) {
-        throw new Error("loop block must have attribute name");
+    // should blocks use name instead of id?
+    if (!node.attributes.id) {
+        throw new Error("block must have attribute name");
     }
 
-    if (isReserved(node.attributes.name) || scope.hasOwnProperty(node.attributes.name)) {
+    if (isReserved(node.attributes.id) || scope.hasOwnProperty(node.attributes.id)) {
         throw new Error("block must have a unique name")
     }
-    BLOCK_MAP[node.attributes.name] = node;
+    scope[node.attributes.id] = node;
 
     // console.log(node)
 }
@@ -110,7 +180,7 @@ function evalLoop(node, scope) {
     // loops should "technically" create their own scope
     // the only thing is that it shoudl take the nearest valible spope
     // using Object.assign right now, it inherit from all of the toppermost scopes (ingluding global
-    
+
     // will leave it for now
     if (!node.attributes.count) {
         throw new Error("loop tag must have attribute count");
@@ -130,11 +200,11 @@ function evalLoop(node, scope) {
 
     let count = evalExpression(node.attributes.count, scope);
 
-    let newScope = Object.assign({}, scope); 
+    let newScope = Object.assign({}, scope);
 
     // let 
     for (let i = 0; i < count; i++) {
-        
+
         newScope[node.attributes.index] = i;
         for (let k = 0; k < node.children.length; k++) {
 
@@ -171,6 +241,9 @@ function evalIf(node, scope) {
     // console.log(node?.attributes.condition)
 
     const result = evalExpression(node.attributes.condition, scope);
+
+    let newScope = Object.assign({}, scope);
+
     // console.log(result)
     if (result) {
         // console.log(node.children)
@@ -186,7 +259,7 @@ function evalIf(node, scope) {
             // console.log(currentNode) 
 
             // let siblingNode = node.children[j + 1];
-            evalNode(currentNode, scope);
+            evalNode(currentNode, newScope);
         }
     } else {
 
@@ -197,7 +270,7 @@ function evalIf(node, scope) {
                 // console.log(currentNode) 
 
                 // let siblingNode = elseNode.children[k + 1];
-                evalNode(currentNode, scope);
+                evalNode(currentNode, newScope);
             }
         }
         // return;
@@ -227,7 +300,7 @@ function evalVar(node, scope) {
         if (!scope.hasOwnProperty(node.attributes.val.name)) {
             throw new Error("No variable with id " + node.attributes.val.name);
         }
-        // reassignment
+        // reassignment/ asignment of variable value
         const referenced_var_value = scope[node.attributes.val.name];
 
 

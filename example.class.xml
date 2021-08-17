@@ -1,10 +1,7 @@
 <class name="Person">
 
-    <constructor>
-        <params/>
-
-        <body>
-        </body>
+    <constructor params=(name, age)>
+        
 
     </constructor>
     

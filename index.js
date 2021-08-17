@@ -2,8 +2,8 @@ const fs = require("fs");
 
 // const { parse, eval } = require('expression-eval');
 
-const parseXML = require("./parser.js");
-const evalMain = require("./eval.js");
+const parseXML = require("./src/parser.js");
+const evalMain = require("./src/eval.js");
 const xml = fs.readFileSync("example.xml", "utf-8");
 
 // console.log(parseXML(xml).children[1])

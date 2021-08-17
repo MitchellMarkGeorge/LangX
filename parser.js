@@ -1,6 +1,6 @@
 //https://github.com/segmentio/xml-parser/blob/master/index.js
 const { parse: parseExpression } = require('expression-eval');
-
+let KEYTAGS = ["main", "var", "if", "else", "print", "loop", "block", "debug", "function"]
 module.exports = parse;
 /**
  * Parse the given string of `xml`.
@@ -68,7 +68,7 @@ function parse(xml) {
 
     // name
     var node = {
-      name: m[1].toLowerCase(), // can now use uppercase variations
+      name: m[1].toLowerCase(), // can now use uppercase variations 
       attributes: {},
       children: []
     };
@@ -82,13 +82,16 @@ function parse(xml) {
       let value;
 
       // only certain attributes and nodes can have expressions
-      if (attr.name === "condition" || attr.name === "val" || attr.name === "content" || attr.name === "count") {
+      // or if it is a custom attribute (could be a block or function)
+      if (attr.name === "condition" || attr.name === "val" || attr.name === "content" || attr.name === "count" || !KEYTAGS.includes(node.name)) {
         value = parseExpression(attr.value);
       } else {
         value = attr.value
       }
       node.attributes[attr.name] = value
     }
+
+    
 
     // self closing tag
     if (match(/^\s*\/>\s*/)) {
@@ -108,7 +111,7 @@ function parse(xml) {
         // get next child block
         let nextChild = tag();
         // if the child block is not null
-        if (nextChild) { 
+        if (nextChild) {
           // check if it is an else tag
           if (nextChild.name === "else") {
             // if it is, instead of adding it as a child, 
@@ -126,7 +129,7 @@ function parse(xml) {
           child = tag()
         }
 
-        
+
       } else {
         // if not if-block, just add the block and move to the next one
         node.children.push(child);
@@ -164,9 +167,10 @@ function parse(xml) {
     // var m = match(/([\w:-]+)\s*=\s*("[^"]*"|'[^']*'|\w+)\s*/);
     var m = match(/([\w:-]+)\s*=\s*("[^"]*"|'[^']*'|\(([^)]*)\)|\w+)\s*/);
     if (!m) return;
-    // console.log(m[2])
     return { name: m[1].toLowerCase(), value: strip(m[2]) }
   }
+
+
 
   /**
    * Strip quotes from `val`.
@@ -174,6 +178,7 @@ function parse(xml) {
    */
 
   function strip(val) {
+    // /^['"\(]|['"\)]$/g
     return val.replace(/^['"\(]|['"\)]$/g, '');
   }
 
