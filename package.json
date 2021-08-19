@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "ts-node index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -18,6 +19,11 @@
   },
   "homepage": "https://github.com/MitchellMarkGeorge/HIPL#readme",
   "dependencies": {
-    "expression-eval": "^5.0.0"
+    "expression-eval": "^5.0.0",
+    "ts-node": "^10.2.1",
+    "typescript": "^4.3.5"
+  },
+  "devDependencies": {
+    "@types/node": "^16.6.2"
   }
 }

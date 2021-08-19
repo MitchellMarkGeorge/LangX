@@ -17,16 +17,20 @@
     <!-- error should be thrown (no block with name test exists) -->
 
 <!-- <test/> -->
-<var id=(name) val=("Jeff")/>
+<!-- <var id=(name) val=("Jeff")/>
 <function id="name_func" params=(name)> 
         <print content=("Your name is: " + name)/>
 </function>
 
 <name_func name=("John")/>
 
-<var id=(name_func) val=("hello")/>
+<var id=(name_func) val=("hello")/> -->
+<debug scope="true"/>
+<include from=(test)/>
+<debug scope="true"/>
+<print content=(name + " from test")/>
 
-<print content=(name_func)/>
+<!-- <print content=("name_func")/> -->
 
 
 <!-- executes the test block -->

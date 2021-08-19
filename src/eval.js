@@ -1,15 +1,7 @@
 const { eval: evalExpression } = require("expression-eval")
+const { KEYTAGS } = require("./constants")
 
-let GLOBAl_SCOPE = {
 
-}
-
-let print = (value) => {
-    console.log(value)
-}
-
-let BLOCK_MAP = {};
-let KEYTAGS = ["main", "var", "if", "else", "print", "loop", "block", "debug", "function"]
 function isReserved(word) {
     return KEYTAGS.includes(word);
 }
@@ -63,7 +55,7 @@ function evalNode(node, scope) {
             evalFunction(node, scope);
             break;
         default:
-            checkBlockMap(node, scope); // scope?
+            checkScopeForBlock(node, scope); // scope?
             break;
     }
 }
@@ -97,11 +89,11 @@ function evalDebug(node, scope) {
     }
 }
 
-function checkBlockMap(node, scope) {
-    console.log(scope);
+function checkScopeForBlock(node, scope) {
+    
     let blockName = node.name;
     // console.log(typeof blockName)
-    // AS OF RIGHT NOW OLY BLOCKS CREATE THEIR OWN SCOPE
+    // AS OF RIGHT NOW ONLY BLOCKS CREATE THEIR OWN SCOPE (soperate from encasulating scope)
     if (!scope.hasOwnProperty(blockName)) {
         throw new Error("Can't recognize tag or block")
     }
@@ -132,11 +124,7 @@ function checkBlockMap(node, scope) {
                 const currentNode = blockNode.children[i];
                 evalNode(currentNode, newScope);
             }
-            // console.log(scope)
-
-
-            // console.log("function");
-            // return;
+         
         } else {
             let newScope = {}
             //Object.assign({}, scope); 
@@ -227,7 +215,7 @@ function evalPrint(node, scope) {
 
     const content = evalExpression(node.attributes.content, scope);
 
-    print(content);
+    scope.print(content);
 }
 
 function evalIf(node, scope) {
@@ -319,6 +307,14 @@ function evalVar(node, scope) {
 }
 
 function evalMain(node) {
+
+    const GLOBAl_SCOPE = {};
+
+    GLOBAl_SCOPE.print = (value) => {
+        console.log(value)
+    }
+
+
     if (node.name !== "main") {
         throw new Error("Root node must be 'main'")
     }
@@ -338,6 +334,8 @@ function evalMain(node) {
 
         // console.log(GLOBAl_SCOPE)
     }
+
+    return GLOBAl_SCOPE; // this is needed in the case of include tags
 
 }
 

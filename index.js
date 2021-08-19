@@ -1,6 +1,10 @@
 const fs = require("fs");
 
+const path = require("path");
+
 // const { parse, eval } = require('expression-eval');
+
+// console.log(path.relative("./example.class.xml", "example.xml"))
 
 const parseXML = require("./src/parser.js");
 const evalMain = require("./src/eval.js");
