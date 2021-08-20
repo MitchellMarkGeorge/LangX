@@ -25,13 +25,31 @@
 <name_func name=("John")/>
 
 <var id=(name_func) val=("hello")/> -->
-<debug scope="true"/>
-<include from=(test)/>
-<debug scope="true"/>
-<print content=(name + " from test")/>
+<!-- <debug scope="true"/> -->
+<!-- <include from=(test)/> -->
+<!-- <debug scope="true"/> -->
+<!-- <print content=(name + " from test")/> -->
 
 <!-- <print content=("name_func")/> -->
 
+<!-- <var id=(fib_result) val=(undefined)/> -->
+<function id="isEven" params=(num) >
+    
+    <return> 
+       <block id=(me)>
+       </block>
+   
+    </return>
+</function>
+
+<print> 
+    <isEven num=(64)/>
+</print>
+
+
+
+<!-- cool things -->
+<!-- can technically define blocks in if statements -->
 
 <!-- executes the test block -->
 <!-- no idea what name is  -->

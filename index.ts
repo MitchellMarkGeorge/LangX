@@ -1,5 +1,5 @@
-import { Program } from "./src/Program";
+import { Script } from "./src/Script";
 
-const program = new Program("example.xml");
+const script = new Script("examples/example.xml"); // should use .langx extension
 
-program.run();
+script.run();

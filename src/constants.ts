@@ -1,6 +1,6 @@
 
 
-export const KEYTAGS = ["main", "var", "if", "else", "print", "loop", "block", "debug", "function", "include"];
+export const KEYTAGS = ["main", "var", "if", "else", "print", "loop", "block", "debug", "function", "include", "return"];
 
 export const EXPRESSION_ATTRIBUTES = ["condition", "val" ,"content", "count"];
 

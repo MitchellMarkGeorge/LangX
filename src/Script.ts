@@ -2,7 +2,7 @@ import { Parser } from "./Parser";
 import fs from "fs";
 import { Evaluator } from "./Evaluator";
 
-export class Program {
+export class Script {
   private filePath: string;
   private parser: Parser;
   constructor(filePath: string) {
