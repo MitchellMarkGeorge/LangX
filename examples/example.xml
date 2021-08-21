@@ -33,17 +33,29 @@
 <!-- <print content=("name_func")/> -->
 
 <!-- <var id=(fib_result) val=(undefined)/> -->
-<function id="isEven" params=(num) >
+<function id="fiGo" params=(num)>
     
-    <return> 
-       <block id=(me)>
-       </block>
-   
-    </return>
+    <!-- <if condition=(num <= 1)>
+        <return val=(1)/>
+    </if>
+
+    <var id=(first)> 
+        <fiGo num=(num - 1)/>
+    </var>
+
+    <var id=(second)> 
+        <fiGo num=(num - 2)/>
+    </var> -->
+
+    <return val=(num++)/>
+       
+  
 </function>
 
-<print> 
-    <isEven num=(64)/>
+
+
+<print>
+    <fiGo/>
 </print>
 
 

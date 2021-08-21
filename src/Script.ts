@@ -1,6 +1,6 @@
 import { Parser } from "./Parser";
 import fs from "fs";
-import { Evaluator } from "./Evaluator";
+import { Interpreter } from "./Interpreter";
 
 export class Script {
   private filePath: string;
@@ -14,10 +14,10 @@ export class Script {
 
   run() {
     const ast = this.parser.parse();
-
+    console.log(ast?.children)
     if (ast) {
-      const evaluator = new Evaluator(ast, this.filePath);
-      return evaluator.eval();
+      const interpreter = new Interpreter(ast, this.filePath);
+      return interpreter.eval();
     }
 
     return null;
