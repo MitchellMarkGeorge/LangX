@@ -14,7 +14,7 @@ export class Script {
 
   run() {
     const ast = this.parser.parse();
-    console.log(ast?.children)
+    // console.log(ast?.children)
     if (ast) {
       const interpreter = new Interpreter(ast, this.filePath);
       return interpreter.eval();

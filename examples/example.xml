@@ -58,6 +58,8 @@
     <fiGo/>
 </print>
 
+<print content=("hello")/>
+
 
 
 <!-- cool things -->

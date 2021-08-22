@@ -113,7 +113,7 @@ export class Interpreter {
   }
 
   private evalIncude(node: IncludeNode, scope: Scope): ReturnSignal {
-    console.log(node);
+    // console.log(node);
     if (!node.attributes.from) {
       throw new Error("include tag must have from attribute");
     }
@@ -179,7 +179,7 @@ export class Interpreter {
   }
 
   private checkScopeForBlock(node: BlockNode, scope: Scope): ReturnSignal {
-    console.log(node) 
+    // console.log(node) 
     let blockName = node.name;
     // console.log(typeof blockName)
     // AS OF RIGHT NOW ONLY BLOCKS CREATE THEIR OWN SCOPE (soperate from encasulating scope)
@@ -195,7 +195,7 @@ export class Interpreter {
 
       if (blockNode.name === "function") {
         let params: { [key: string]: any } = {};
-        console.log(node.attributes)
+        // console.log(node.attributes)
         // gets the params from the callee
         Object.keys(node.attributes).forEach((key) => {
           let value = node.attributes[key];
