@@ -154,6 +154,7 @@ export class Interpreter {
     }
 
     if (
+
       isKeyTag(node.attributes.id) ||
       scope.hasOwnProperty(node.attributes.id)
     ) {
