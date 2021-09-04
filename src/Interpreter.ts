@@ -1,10 +1,10 @@
-import { isKeyTag } from "./constants";
+import { error, isKeyTag } from "./constants";
 import {
   BlockNode,
   DebugNode,
   FunctionNode,
   IfNode,
-  IncludeNode,
+  InputNode,
   LoopNode,
   PrintNode,
   VarNode,
@@ -13,13 +13,12 @@ import { Scope, ReturnSignal, DEFAULT_SIGNAL } from "./types/types";
 import { Node } from "./types/nodes";
 
 import { eval as evalExpression, parse } from "expression-eval";
-import path from "path";
-import { existsSync } from "fs";
-import { Script } from "./Script";
+import PromptSync from "prompt-sync";
 
 export class Interpreter {
   private ast: Node;
   private scriptPath: string; // path of the current script that is running
+  private exported!: Scope | null;
 
   constructor(ast: Node, programPath: string) {
     this.ast = ast;
@@ -27,14 +26,16 @@ export class Interpreter {
   }
 
   eval() {
-    return this.evalMain(this.ast);
+    this.evalMain(this.ast);
   }
 
   private evalNode(node: Node, scope: Scope): ReturnSignal {
     // default return value for non returning tags is undefined
+
+    // removed import functionality for now
     switch (node.name) {
       case "main":
-        throw new Error("There can only be one 'main' tag");
+        error("There can only be one 'main' tag");
       case "var":
         // rerun the alue assigned?
         return this.evalVar(node as VarNode, scope); // cant return
@@ -47,7 +48,7 @@ export class Interpreter {
 
       case "else":
         // all else tags should be coupled with their appropiate if statements
-        throw new Error("Misplaced else tag");
+        error("Misplaced else tag");
 
       case "print":
         return this.evalPrint(node as PrintNode, scope); // cant return // can use val
@@ -74,22 +75,65 @@ export class Interpreter {
 
         // should a a function declaration return that function node
         return this.evalFunction(node as FunctionNode, scope); // can return
-      // break;
 
-      case "include":
-        // only mutates given scope, no return
-        return this.evalIncude(node as IncludeNode, scope);
-      // break;
+      // case "include":
+      //   // only mutates given scope, no return
+      //   return this.evalIncude(node as IncludeNode, scope);
 
       case "return":
         // returns work through a bubling system
         // each eval returns a signal and depending on the tag, the signal can either be ignured
         // or returned (going higher up/bubbles)
         return this.evalReturn(node, scope);
+
+      case "input":
+        return this.evalInput(node as InputNode, scope);
+
+      // case "export":
+      //     return this.evalExport(node as ExportNode, scope)
       default:
         return this.checkScopeForBlock(node as BlockNode, scope); // scope?
-      // break;
     }
+  }
+
+  // removing module support for now
+
+  // private evalExport(node: ExportNode, scope: Scope): ReturnSignal {
+  //   if (!node.attributes.namespace) {
+  //     error("export tag must have namespace attribute")
+  //   }
+  //   const newScope = this.newScope(); // should it be a new scope? if itt extends the surrounding scope, it still is an issue
+  //   // extending the scope lets imported code to leak in
+  //   for (let i = 0; i < node.children.length; i++) {
+  //     const currentNode = node.children[i];
+  //     if (currentNode.name === "return") {
+  //       error("export tag can't return");
+  //     }
+  //     this.evalNode(currentNode, newScope); // ignore any returns?
+  //   }
+
+  //   Object.entries(newScope).forEach((entry) => {
+  //     const [key, value] = entry;
+  //     // will leave the print and input incase it is overriden
+  //     newScope[`${node.attributes.namespace}:${key}`] = value; // namespace the items
+  //     delete newScope[key]; // remove the non-namespaced items
+  //   });
+
+  //   this.exported = newScope;
+  //   // namespace it
+  //   return DEFAULT_SIGNAL
+  // }
+
+  private evalInput(node: InputNode, scope: Scope): ReturnSignal {
+    if (!node.attributes.content) {
+      error("input tag must have attribute content");
+    }
+
+    const promptText = evalExpression(node.attributes.content, scope);
+
+    const value = PromptSync()(promptText);
+
+    return { doesReturn: false, value }; // think about this
   }
 
   private evalReturn(node: Node, scope: Scope): ReturnSignal {
@@ -99,7 +143,7 @@ export class Interpreter {
       return { doesReturn: true, value };
     } else if (node.children.length) {
       if (node.children.length > 1) {
-        throw new Error("return tag cant have more than one child");
+        error("return tag can't have more than one child");
       }
 
       const [child] = node.children;
@@ -112,53 +156,58 @@ export class Interpreter {
     }
   }
 
-  private evalIncude(node: IncludeNode, scope: Scope): ReturnSignal {
-    // console.log(node);
-    if (!node.attributes.from) {
-      throw new Error("include tag must have from attribute");
-    }
+  // removing module support for now
 
-    let fromPath: string;
-    if (node.attributes.from.endsWith(".xml")) {
-      fromPath = node.attributes.from;
-    } else {
-      fromPath = node.attributes.from.concat(".xml");
-    }
+  // private evalIncude(node: IncludeNode, scope: Scope): ReturnSignal {
+  //   // console.log(node);
+  //   if (!node.attributes.from) {
+  //     error("include tag must have from attribute");
+  //   }
 
-    let rootPath = path.dirname(this.scriptPath);
+  //   let fromPath: string;
+  //   if (node.attributes.from.endsWith(".xml")) {
+  //     fromPath = node.attributes.from;
+  //   } else {
+  //     fromPath = node.attributes.from.concat(".xml");
+  //   }
 
-    let modulePath = path.join(rootPath, fromPath);
+  //   let rootPath = path.dirname(this.scriptPath);
 
-    if (!existsSync(modulePath)) {
-      throw new Error("There is no module with name " + node.attributes.from);
-    }
+  //   let modulePath = path.join(rootPath, fromPath);
 
-    let script = new Script(modulePath);
+  //   if (!existsSync(modulePath)) {
+  //     error("There is no module with name " + node.attributes.from);
+  //   }
 
-    let importedScope = script.run();
-    // IMPORTANT
-    // Only takes global scope of imported module
-    if (importedScope) {
-      // right most should have preference right?
-      // scope should be mutated with global scope values of imported file
-      Object.assign(scope, importedScope);
-    } else {
-      throw new Error("Unable to load module");
-    }
+  //   let script = new Script(modulePath);
 
-    return { doesReturn: false };
-  }
+  //   let importedScope = script.run();
+  //   // IMPORTANT
+  //   // Only takes global scope of imported module
+  //   if (importedScope) {
+  //     // right most should have preference right?
+  //     // scope should be mutated with global scope values of imported file
+
+  //     // if other file imports a module, the scope of the other file is added
+
+  //     console.log(importedScope);
+  //     Object.assign(scope, importedScope);
+  //   } else {
+  //     error("Unable to load module");
+  //   }
+
+  //   return { doesReturn: false };
+  // }
   private evalFunction(node: FunctionNode, scope: Scope): ReturnSignal {
     if (!node.attributes.id) {
-      throw new Error("function must have attribute name");
+      error("function must have attribute name");
     }
 
     if (
-
       isKeyTag(node.attributes.id) ||
       scope.hasOwnProperty(node.attributes.id)
     ) {
-      throw new Error("function must have a unique name");
+      error("function must have a unique name");
     }
     scope[node.attributes.id] = node;
 
@@ -173,24 +222,25 @@ export class Interpreter {
 
   private evalDebug(node: DebugNode, scope: Scope): ReturnSignal {
     if (node.attributes.scope === "true") {
-      scope.print(scope);
+      console.log(scope);
     }
 
     return { doesReturn: false };
   }
 
   private checkScopeForBlock(node: BlockNode, scope: Scope): ReturnSignal {
-    // console.log(node) 
+    // console.log(node)
     let blockName = node.name;
     // console.log(typeof blockName)
     // AS OF RIGHT NOW ONLY BLOCKS CREATE THEIR OWN SCOPE (soperate from encasulating scope)
     if (!scope.hasOwnProperty(blockName)) {
-      throw new Error("Can't recognize tag or block");
+      error("Can't recognize tag or block");
     }
 
-    let blockNode = scope[blockName];
+    let blockNode = scope[blockName] as BlockNode;
 
-    if (blockNode) {
+    //  first check was unneeded due to the hasOwnProperty check above
+    if (blockNode?.name === "function" || blockNode?.name === "block") {
       // this merges the previous global scope with  a new scope
       // this alowes global variables to be used in scoped blocks
 
@@ -224,11 +274,13 @@ export class Interpreter {
         for (let i = 0; i < blockNode.children.length; i++) {
           const currentNode = blockNode.children[i];
           if (currentNode.name === "return") {
-            throw new Error("Can't return in block tag. Use function instead");
+            error("Can't return in block tag. Use function instead");
           }
           this.evalNode(currentNode, newScope);
         }
       }
+    } else {
+      error("Can only call functions or blocks");
     }
 
     return DEFAULT_SIGNAL;
@@ -237,35 +289,36 @@ export class Interpreter {
   private evalBlock(node: BlockNode, scope: Scope): ReturnSignal {
     // should blocks use name instead of id?
     if (!node.attributes.id) {
-      throw new Error("block must have attribute name");
+      error("block must have attribute id");
     }
 
     if (
       isKeyTag(node.attributes.id) ||
       scope.hasOwnProperty(node.attributes.id)
     ) {
-      throw new Error("block must have a unique name");
+      error("block must have a unique name");
     }
     scope[node.attributes.id] = node;
 
     // console.log(node)
     return { doesReturn: false };
   }
+
   private evalLoop(node: LoopNode, scope: Scope): ReturnSignal {
     if (!node.attributes.count) {
-      throw new Error("loop tag must have attribute count");
+      error("loop tag must have attribute count");
     }
 
     if (!node.attributes.index) {
-      throw new Error("loop tag must have attribute index");
+      error("loop tag must have attribute index");
     }
 
     if (!node.children.length) {
-      throw new Error("loop tag must have children");
+      error("loop tag must have children");
     }
 
     if (scope.hasOwnProperty(node.attributes.index)) {
-      throw new Error("index variable in loop tag must be unique");
+      error("index variable in loop tag must be unique");
     }
 
     let count = evalExpression(node.attributes.count, scope);
@@ -296,22 +349,20 @@ export class Interpreter {
       // use val unstead
       const content = evalExpression(node.attributes.content, scope);
 
-      scope.print(content);
+      console.log(content);
     } else if (node.children.length) {
       if (node.children.length > 1) {
-        throw new Error("must have child");
+        error("must have child");
       }
 
       const [child] = node.children;
       const signal = this.evalNode(child, scope);
-      scope.print(signal.value);
+      console.log(signal.value);
       // if (signal.doesReturn) {
       //     scope.print(signal.value);
       // }
     } else {
-      throw new Error(
-        "print tag must have content attribute  or single child "
-      );
+      error("print tag must have content attribute  or single child ");
     }
 
     return DEFAULT_SIGNAL;
@@ -319,7 +370,7 @@ export class Interpreter {
 
   private evalIf(node: IfNode, scope: Scope): ReturnSignal {
     if (!node?.attributes.condition) {
-      throw new Error("if tag must have 'condition' attribute");
+      error("if tag must have 'condition' attribute");
     }
 
     const result = evalExpression(node.attributes.condition, scope);
@@ -328,7 +379,7 @@ export class Interpreter {
 
     if (result) {
       if (!node.children.length) {
-        throw new Error("if tag must have a body");
+        error("if tag must have a body");
       }
 
       for (let j = 0; j < node.children.length; j++) {
@@ -358,7 +409,7 @@ export class Interpreter {
 
   private evalVar(node: VarNode, scope: Scope): ReturnSignal {
     if (!node.attributes.id) {
-      throw new Error("var tag must have attribute 'id'");
+      error("var tag must have attribute 'id'");
     }
 
     // if (!node.attributes.val) {
@@ -374,7 +425,7 @@ export class Interpreter {
       } else if (node.attributes.val.type === "Identifier") {
         const identifierNode = node.attributes.val as parse.Identifier;
         if (!scope.hasOwnProperty(identifierNode.name)) {
-          throw new Error("No variable with id " + identifierNode.name);
+          error("No variable with id " + identifierNode.name);
         }
         // reassignment/ asignment of variable value
         const referenced_var_value = scope[identifierNode.name];
@@ -386,7 +437,7 @@ export class Interpreter {
       }
     } else if (node.children.length) {
       if (node.children.length > 1) {
-        throw new Error("var tag can only have one child");
+        error("var tag can only have one child");
       }
 
       const [child] = node.children;
@@ -394,17 +445,18 @@ export class Interpreter {
       const signal = this.evalNode(child, scope);
       scope[node.attributes.id] = signal.value; // if the child node does not return, it will be
     } else {
-      throw new Error("var must have val attribute or single child");
+      error("var must have val attribute or single child");
     }
 
     return DEFAULT_SIGNAL;
   }
 
   private evalMain(node: Node) {
+    // no need to return global scope now
     const GLOBAl_SCOPE = this.newScope();
 
     if (node.name !== "main") {
-      throw new Error("Root node must be 'main'");
+      error("Root tag must be 'main'");
     }
 
     if (node.children.length) {
@@ -416,14 +468,15 @@ export class Interpreter {
       }
     }
 
-    return GLOBAl_SCOPE; // this is needed in the case of include tags
+    
+    // return GLOBAl_SCOPE; // this is needed in the case of include tags
+  }
+
+  getExported() {
+    return this.exported;
   }
 
   private newScope(): Scope {
-    return {
-      print: (value) => {
-        console.log(value);
-      },
-    };
+    return {};
   }
 }

@@ -17,7 +17,7 @@ export class Script {
     // console.log(ast?.children)
     if (ast) {
       const interpreter = new Interpreter(ast, this.filePath);
-      return interpreter.eval();
+      interpreter.eval();
     }
 
     return null;

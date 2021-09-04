@@ -1,5 +1,10 @@
 <main>
 
+<!-- <include from=(test)/> -->
+
+
+
+
     <!-- "test" === (test) *both identifiers. That means ("test") dosent work (references a string) -->
 <!-- can declare blocks in if statements -->
 <!-- 
@@ -33,7 +38,7 @@
 <!-- <print content=("name_func")/> -->
 
 <!-- <var id=(fib_result) val=(undefined)/> -->
-<function id="fiGo" params=(num)>
+<!-- <function id="fiGo" params=(num)> -->
     
     <!-- <if condition=(num <= 1)>
         <return val=(1)/>
@@ -47,19 +52,29 @@
         <fiGo num=(num - 2)/>
     </var> -->
 
-    <return val=(num++)/>
+    <!-- <return val=(num++)/> -->
        
   
-</function>
+<!-- </function> -->
 
 
 
-<print>
-    <fiGo/>
-</print>
+<!-- <print> -->
 
-<print content=("hello")/>
+    <!-- <return val=("hello")/> -->
+<!-- </print> -->
 
+<!-- <print content=("hello")/> -->
+
+
+
+
+
+<!-- <var id=(me)>
+    <return val=(3)/>
+</var>
+
+<print content=(me)/> -->
 
 
 <!-- cool things -->

@@ -5,6 +5,10 @@ export interface Attributes {
     [key: string] : any 
 }
 
+export interface InputAttributes extends Attributes {
+    content: parse.Expression;
+}
+
 export interface VarAttributes extends Attributes {
     id: string,
     val: parse.Expression
@@ -37,4 +41,8 @@ export interface DebugAttributes extends Attributes {
 
 export interface IncludeAttributes extends Attributes {
     from: string;
+}
+
+export interface ExportAttributes extends Attributes {
+    namespace: string;
 }

@@ -2,9 +2,11 @@ import {
   Attributes,
   BlockAttributes,
   DebugAttributes,
+  ExportAttributes,
   FunctionAttributes,
   IfAttributes,
   IncludeAttributes,
+  InputAttributes,
   LoopAttributes,
   PrintAttributes,
   VarAttributes,
@@ -48,4 +50,12 @@ export interface DebugNode extends Node {
 
 export interface IncludeNode extends Node {
   attributes: IncludeAttributes;
+}
+
+export interface InputNode extends Node {
+  attributes: InputAttributes;
+}
+
+export interface ExportNode extends Node {
+  attributes: ExportAttributes;
 }

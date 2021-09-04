@@ -5,11 +5,13 @@ export interface ParsedAttribute {
 
 export interface Scope {
     [key: string]: any,
-    print: (value: any) => void;
+    // print: (value: any) => void;
+    // input: (prompt: any) => void
 }
 
 export interface ReturnSignal {
     doesReturn: boolean // technically does not have to return a value (can be an early exit/ default value might be used)
+    //return here means that it breaks the flow and returns to the upper scope
     value?: any | undefined
 }
 

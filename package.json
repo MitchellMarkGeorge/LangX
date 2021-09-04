@@ -19,11 +19,15 @@
   },
   "homepage": "https://github.com/MitchellMarkGeorge/HIPL#readme",
   "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^8.1.0",
     "expression-eval": "^5.0.0",
+    "prompt-sync": "^4.2.0",
     "ts-node": "^10.2.1",
     "typescript": "^4.3.5"
   },
   "devDependencies": {
-    "@types/node": "^16.6.2"
+    "@types/node": "^16.6.2",
+    "@types/prompt-sync": "^4.1.1"
   }
 }
