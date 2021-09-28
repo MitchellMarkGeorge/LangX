@@ -1,9 +1,29 @@
 <main>
 
-<!-- <include from=(test)/> -->
+    
+
+<function id=(lessThan) params=(num1, num2)> 
+
+    
+
+    <if condition=(true)> 
+        <if condition=(true)> 
+            <if condition=(true)> 
+            <if condition=(true)> 
+                <print content=("hello")/>
+                <return/>
+    </if>
+    </if>
+    </if>
+    </if>
+
+    <debug error=(true)/>
+</function>
 
 
+<lessThan num1=(11) num2=(2)/>
 
+<debug error=(true)/>
 
     <!-- "test" === (test) *both identifiers. That means ("test") dosent work (references a string) -->
 <!-- can declare blocks in if statements -->

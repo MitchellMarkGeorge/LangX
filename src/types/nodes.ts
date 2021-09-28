@@ -20,7 +20,7 @@ export interface Node {
 }
 
 export interface IfNode extends Node {
-  elseNode?: Node;
+  elseNode?: Node; 
   attributes: IfAttributes;
 }
 

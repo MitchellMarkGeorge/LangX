@@ -1,5 +1,6 @@
 // based on
 //https://github.com/segmentio/xml-parser/blob/master/index.js
+// https://github.com/chrisbottin/xml-parser/blob/master/index.js
 
 import { parse as parseExpression } from "expression-eval";
 import {
@@ -104,12 +105,9 @@ export class Parser {
     return node;
   }
 
-  /**
-   * Content
-   * @api private
-   */
+
   private content() {
-    //   debug('content %j', xml);
+   
     var m = this.match(/^([^<]*)/);
     if (m) return m[1];
     return "";
@@ -147,7 +145,7 @@ export class Parser {
 
   private match(re: RegExp) {
     var m = this.xml.match(re);
-    if (!m) return;
+    if (!m) return null;
     this.xml = this.xml.slice(m[0].length);
     return m;
   }

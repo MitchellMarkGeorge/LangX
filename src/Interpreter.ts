@@ -14,15 +14,17 @@ import { Node } from "./types/nodes";
 
 import { eval as evalExpression, parse } from "expression-eval";
 import PromptSync from "prompt-sync";
+import { CallStack } from "./CallStack";
 
 export class Interpreter {
   private ast: Node;
   private scriptPath: string; // path of the current script that is running
   private exported!: Scope | null;
-
+  private callStack: CallStack;
   constructor(ast: Node, programPath: string) {
     this.ast = ast;
     this.scriptPath = programPath;
+    this.callStack = new CallStack(programPath);
   }
 
   eval() {
@@ -35,7 +37,8 @@ export class Interpreter {
     // removed import functionality for now
     switch (node.name) {
       case "main":
-        error("There can only be one 'main' tag");
+        this.callStack.push({ tagName: node.name})
+        error("There can only be one 'main' tag", this.callStack);
       case "var":
         // rerun the alue assigned?
         return this.evalVar(node as VarNode, scope); // cant return
@@ -47,8 +50,9 @@ export class Interpreter {
       // break;
 
       case "else":
+        this.callStack.push({ tagName: node.name})
         // all else tags should be coupled with their appropiate if statements
-        error("Misplaced else tag");
+        error("Misplaced else tag", this.callStack);
 
       case "print":
         return this.evalPrint(node as PrintNode, scope); // cant return // can use val
@@ -125,30 +129,34 @@ export class Interpreter {
   // }
 
   private evalInput(node: InputNode, scope: Scope): ReturnSignal {
+    this.callStack.push({ tagName: node.name})
     if (!node.attributes.content) {
-      error("input tag must have attribute content");
+      error("input tag must have attribute content", this.callStack);
     }
 
     const promptText = evalExpression(node.attributes.content, scope);
 
     const value = PromptSync()(promptText);
-
+    this.callStack.pop();
     return { doesReturn: false, value }; // think about this
   }
 
   private evalReturn(node: Node, scope: Scope): ReturnSignal {
     // this should bubble up hopefully
+    this.callStack.push({tagName: node.name})
     if (node.attributes.val) {
       const value = evalExpression(node.attributes.val, scope);
       return { doesReturn: true, value };
     } else if (node.children.length) {
       if (node.children.length > 1) {
-        error("return tag can't have more than one child");
+        error("return tag can't have more than one child", this.callStack);
       }
 
       const [child] = node.children;
+      this.callStack.pop()
       return this.evalNode(child, scope); // does this leave the posibility of returning nuthing? // in this case, the default retuned value should be null
     } else {
+      this.callStack.pop();
       return { doesReturn: true, value: undefined }; // has to return -> defaukt return
       // throw new Error(
       //   "either val attribute or single child returning tag must be provided"
@@ -199,15 +207,18 @@ export class Interpreter {
   //   return { doesReturn: false };
   // }
   private evalFunction(node: FunctionNode, scope: Scope): ReturnSignal {
+    // should i acctually 
+    // to show the the problem occured at a function definition and not invocation
+    this.callStack.push({ tagName: node.name + "_def"})
     if (!node.attributes.id) {
-      error("function must have attribute name");
+      error("function must have attribute name", this.callStack);
     }
 
     if (
       isKeyTag(node.attributes.id) ||
       scope.hasOwnProperty(node.attributes.id)
     ) {
-      error("function must have a unique name");
+      error(`function must have a unique name: "${node.attributes.id}" is already in scope"`, this.callStack);
     }
     scope[node.attributes.id] = node;
 
@@ -216,13 +227,19 @@ export class Interpreter {
 
     // params = params.trim().split(/[\s,]+/);
     // console.log(params);
-
+    this.callStack.pop();
     return DEFAULT_SIGNAL;
   }
 
   private evalDebug(node: DebugNode, scope: Scope): ReturnSignal {
+    
+    this.callStack.push({ tagName: node.name})
     if (node.attributes.scope === "true") {
       console.log(scope);
+    }
+
+    if (node.attributes.error === "true") {
+      error("DEBUG", this.callStack);
     }
 
     return { doesReturn: false };
@@ -233,8 +250,9 @@ export class Interpreter {
     let blockName = node.name;
     // console.log(typeof blockName)
     // AS OF RIGHT NOW ONLY BLOCKS CREATE THEIR OWN SCOPE (soperate from encasulating scope)
+    this.callStack.push({ name: blockName, tagName: blockName})
     if (!scope.hasOwnProperty(blockName)) {
-      error("Can't recognize tag or block");
+      error(`Can't recognize tag or block "${blockName}"`, this.callStack);
     }
 
     let blockNode = scope[blockName] as BlockNode;
@@ -245,6 +263,7 @@ export class Interpreter {
       // this alowes global variables to be used in scoped blocks
 
       if (blockNode.name === "function") {
+        this.callStack.peek().tagName = "function"
         let params: { [key: string]: any } = {};
         // console.log(node.attributes)
         // gets the params from the callee
@@ -265,60 +284,65 @@ export class Interpreter {
           const currentNode = blockNode.children[i];
           let signal = this.evalNode(currentNode, newScope);
           if (signal.doesReturn) {
+            this.callStack.pop(); // should this be here?
             return signal;
           }
         }
       } else {
+        this.callStack.peek().tagName = "block"
         let newScope = this.newScope();
         //Object.assign({}, scope);
         for (let i = 0; i < blockNode.children.length; i++) {
           const currentNode = blockNode.children[i];
           if (currentNode.name === "return") {
-            error("Can't return in block tag. Use function instead");
+            error("Can't return in block tag. Use function instead", this.callStack);
           }
           this.evalNode(currentNode, newScope);
         }
       }
     } else {
-      error("Can only call functions or blocks");
+      error("Can only call functions or blocks", this.callStack);
     }
-
+    this.callStack.pop();
     return DEFAULT_SIGNAL;
   }
 
   private evalBlock(node: BlockNode, scope: Scope): ReturnSignal {
     // should blocks use name instead of id?
+    this.callStack.push({ tagName: node.name+"_def"})
     if (!node.attributes.id) {
-      error("block must have attribute id");
+      error("block must have attribute id", this.callStack);
     }
 
     if (
       isKeyTag(node.attributes.id) ||
       scope.hasOwnProperty(node.attributes.id)
     ) {
-      error("block must have a unique name");
+      error(`block must have a unique name: "${node.attributes.id}" is already in scope`, this.callStack);
     }
     scope[node.attributes.id] = node;
 
     // console.log(node)
+    this.callStack.pop();
     return { doesReturn: false };
   }
 
   private evalLoop(node: LoopNode, scope: Scope): ReturnSignal {
+    this.callStack.push({ tagName: node.name});
     if (!node.attributes.count) {
-      error("loop tag must have attribute count");
+      error("loop tag must have attribute count", this.callStack);
     }
 
     if (!node.attributes.index) {
-      error("loop tag must have attribute index");
+      error("loop tag must have attribute index", this.callStack);
     }
 
     if (!node.children.length) {
-      error("loop tag must have children");
+      error("loop tag must have children", this.callStack);
     }
 
     if (scope.hasOwnProperty(node.attributes.index)) {
-      error("index variable in loop tag must be unique");
+      error("index variable in loop tag must be unique", this.callStack);
     }
 
     let count = evalExpression(node.attributes.count, scope);
@@ -332,11 +356,12 @@ export class Interpreter {
         let childNode = node.children[k];
         let signal = this.evalNode(childNode, newScope);
         if (signal.doesReturn) {
+          this.callStack.pop(); // should this be here?
           return signal;
         }
       }
     }
-
+    this.callStack.pop();
     return DEFAULT_SIGNAL;
   }
 
@@ -345,14 +370,17 @@ export class Interpreter {
     //   throw new Error("No content provided");
     // }
 
+    this.callStack.push({ tagName: node.name})
+
     if (node.attributes.content) {
       // use val unstead
+
       const content = evalExpression(node.attributes.content, scope);
 
       console.log(content);
     } else if (node.children.length) {
       if (node.children.length > 1) {
-        error("must have child");
+        error("must have child", this.callStack);
       }
 
       const [child] = node.children;
@@ -362,15 +390,16 @@ export class Interpreter {
       //     scope.print(signal.value);
       // }
     } else {
-      error("print tag must have content attribute  or single child ");
+      error("print tag must have content attribute or single child", this.callStack);
     }
-
+    this.callStack.pop();
     return DEFAULT_SIGNAL;
   }
 
   private evalIf(node: IfNode, scope: Scope): ReturnSignal {
+    this.callStack.push({ tagName: node.name});
     if (!node?.attributes.condition) {
-      error("if tag must have 'condition' attribute");
+      error("if tag must have 'condition' attribute", this.callStack);
     }
 
     const result = evalExpression(node.attributes.condition, scope);
@@ -379,7 +408,7 @@ export class Interpreter {
 
     if (result) {
       if (!node.children.length) {
-        error("if tag must have a body");
+        error("if tag must have a body", this.callStack);
       }
 
       for (let j = 0; j < node.children.length; j++) {
@@ -387,6 +416,7 @@ export class Interpreter {
 
         let signal = this.evalNode(currentNode, newScope);
         if (signal.doesReturn) {
+          this.callStack.pop(); // should this be here?
           return signal;
         }
       }
@@ -398,24 +428,27 @@ export class Interpreter {
 
           let signal = this.evalNode(currentNode, newScope);
           if (signal.doesReturn) {
+            this.callStack.pop(); // should this be here?
             return signal;
           }
         }
       }
     }
 
+    this.callStack.pop();
     return DEFAULT_SIGNAL;
   }
 
   private evalVar(node: VarNode, scope: Scope): ReturnSignal {
+    this.callStack.push({ tagName: node.name, name: node.attributes.id});
     if (!node.attributes.id) {
-      error("var tag must have attribute 'id'");
+      error("var tag must have attribute 'id'", this.callStack);
     }
 
     // if (!node.attributes.val) {
     //   throw new Error("var tag must have attribute 'val'");
     // }
-
+    
     if (node.attributes.val) {
       if (node.attributes.val.type === "Literal") {
         // booleans, strings, numbers
@@ -425,7 +458,7 @@ export class Interpreter {
       } else if (node.attributes.val.type === "Identifier") {
         const identifierNode = node.attributes.val as parse.Identifier;
         if (!scope.hasOwnProperty(identifierNode.name)) {
-          error("No variable with id " + identifierNode.name);
+          error("No variable with id " + identifierNode.name, this.callStack);
         }
         // reassignment/ asignment of variable value
         const referenced_var_value = scope[identifierNode.name];
@@ -437,7 +470,7 @@ export class Interpreter {
       }
     } else if (node.children.length) {
       if (node.children.length > 1) {
-        error("var tag can only have one child");
+        error("var tag can only have one child", this.callStack);
       }
 
       const [child] = node.children;
@@ -445,8 +478,10 @@ export class Interpreter {
       const signal = this.evalNode(child, scope);
       scope[node.attributes.id] = signal.value; // if the child node does not return, it will be
     } else {
-      error("var must have val attribute or single child");
+      error("var must have val attribute or single child", this.callStack);
     }
+
+    this.callStack.pop();
 
     return DEFAULT_SIGNAL;
   }
@@ -454,11 +489,14 @@ export class Interpreter {
   private evalMain(node: Node) {
     // no need to return global scope now
     const GLOBAl_SCOPE = this.newScope();
+    
 
     if (node.name !== "main") {
-      error("Root tag must be 'main'");
+      this.callStack.push({ tagName: node.name})
+      error("Root tag must be 'main'", this.callStack);
     }
 
+    this.callStack.push({ tagName: node.name})
     if (node.children.length) {
       for (let i = 0; i < node.children.length; i++) {
         const currentNode = node.children[i];
@@ -467,6 +505,8 @@ export class Interpreter {
         // handle return?? (value of the script)
       }
     }
+
+    this.callStack.pop();
 
     
     // return GLOBAl_SCOPE; // this is needed in the case of include tags
