@@ -5,8 +5,6 @@ export interface ParsedAttribute {
 
 export interface Scope {
     [key: string]: any,
-    // print: (value: any) => void;
-    // input: (prompt: any) => void
 }
 
 export interface ReturnSignal {

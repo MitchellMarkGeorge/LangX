@@ -142,7 +142,6 @@ export class Interpreter {
   }
 
   private evalReturn(node: Node, scope: Scope): ReturnSignal {
-    // this should bubble up hopefully
     this.callStack.push({tagName: node.name})
     if (node.attributes.val) {
       const value = evalExpression(node.attributes.val, scope);

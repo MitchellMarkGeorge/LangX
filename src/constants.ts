@@ -18,6 +18,7 @@ export const KEYTAGS = [
   // "export"
 ];
 
+// attributes that contain exppressions
 export const EXPRESSION_ATTRIBUTES = ["condition", "val", "content", "count"];
 
 export function isExpressionAttribute(attrName: string) {
@@ -29,12 +30,8 @@ export function isKeyTag(tagName: string) {
 }
 
 export function error(message: string, callStack: CallStack) {
-  
   console.log(chalk.red(`Error: ${message}`));
-  // console.log(callStack);
   callStack.print();
-  
-    // console.log(chalk.green(ndo))
   process.exit();
 }
 

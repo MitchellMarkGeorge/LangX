@@ -29,7 +29,7 @@ export class CallStack {
       } else {
         trace = `${tagName.toUpperCase()} (${this.filePath})`;
       }
-      console.log(`\t at ${trace}`);
+      console.log(`at ${trace}`);
     });
   }
 }

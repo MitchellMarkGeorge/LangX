@@ -42,7 +42,7 @@ export class Parser {
 
     // attributes
     while (!(this.eos() || this.is(">") || this.is("?>") || this.is("/>"))) {
-      var attr = this.attribute();
+      let attr = this.attribute();
       if (!attr) return node;
       let value: string | parseExpression.Expression;
 
@@ -71,7 +71,7 @@ export class Parser {
     let child = this.tag();
     while (child) {
       // find way to tidy this up
-      if (child.name === "if") {
+      if (child.name === "if") { // this parses neighbouring else block
         // get next child block
         let nextChild = this.tag();
         // if the child block is not null
@@ -88,7 +88,7 @@ export class Parser {
             child = this.tag();
           }
         } else {
-          // if next child is null, add if blocl
+          // if next child is null, add if block
           node.children.push(child);
           child = this.tag();
         }
@@ -108,7 +108,7 @@ export class Parser {
 
   private content() {
    
-    var m = this.match(/^([^<]*)/);
+    let m = this.match(/^([^<]*)/);
     if (m) return m[1];
     return "";
   }
@@ -121,8 +121,8 @@ export class Parser {
     //   debug('attribute %j', xml);
     // edited it to allow ()
     // https://www.regextester.com/1969
-    // var m = match(/([\w:-]+)\s*=\s*("[^"]*"|'[^']*'|\w+)\s*/);
-    var m = this.match(/([\w:-]+)\s*=\s*("[^"]*"|'[^']*'|\(([^)]*)\)|\w+)\s*/);
+    // let m = match(/([\w:-]+)\s*=\s*("[^"]*"|'[^']*'|\w+)\s*/);
+    let m = this.match(/([\w:-]+)\s*=\s*("[^"]*"|'[^']*'|\(([^)]*)\)|\w+)\s*/);
     if (!m) return null;
     return { name: m[1].toLowerCase(), value: this.strip(m[2]) };
   }
@@ -144,7 +144,7 @@ export class Parser {
    */
 
   private match(re: RegExp) {
-    var m = this.xml.match(re);
+    let m = this.xml.match(re);
     if (!m) return null;
     this.xml = this.xml.slice(m[0].length);
     return m;
